@@ -1,7 +1,10 @@
 import uuid
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
+
+import models
+
 
 class BaseUser(BaseModel):
     login: str
@@ -30,6 +33,12 @@ class UserResponse(BaseModel):
 
 class UserCreate(BaseUser):
     pass
+
+    @validator("login")
+    def login_length(cls, login):
+        if len(login) > 50 or len(login) < 5:
+            raise ValueError("login max len 50, min len 5")
+        return login
 
 
 class UserAuthenticate(BaseUser):

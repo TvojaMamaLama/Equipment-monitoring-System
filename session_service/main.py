@@ -2,9 +2,11 @@ import uuid
 import datetime
 from typing import List, Optional
 
-from fastapi import FastAPI, Depends, status, Header, Security, Response
+from fastapi import FastAPI, Depends, status, Response
 from fastapi.exceptions import HTTPException
+from pydantic import ValidationError
 
+import models
 from models import database
 import settings
 from auth import authenticate_user, create_access_token
@@ -30,14 +32,8 @@ async def shutdown() -> None:
         await database_.disconnect()
 
 
-@app.post("/auth")
-async def user_authorization(authorization: Optional[str] = Header(None)):
-    if authorization:
-        login_password: list[str] = authorization[7:-1].split(":")
-        user = schemas.UserAuthenticate(login=login_password[0], password=login_password[1])
-        print(user)
-    else:
-        return Response(status_code=400, content={"message": "put your login and password to auth header"})
+@app.post("/auth", response_model=schemas.Token)
+async def user_authorization(user: schemas.UserAuthenticate):
     user = await authenticate_user(user)
     if not user:
         raise HTTPException(
@@ -50,7 +46,7 @@ async def user_authorization(authorization: Optional[str] = Header(None)):
     if user.is_admin:
         scopes.append("admin")
     access_token = create_access_token(
-        data={"user": user.login, "scopes": scopes},
+        data={"user": user, "scopes": scopes},
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -61,32 +57,25 @@ async def get_all_users_view():
     return await crud.get_all_users()
 
 
-@app.post("/users", response_model=schemas.UserResponse)
+@app.post("/users", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user_view(user: schemas.UserCreate):
+    if await models.User.objects.get_or_none(login=user.login):
+        raise HTTPException(
+            status_code=422,
+            detail="User with same login exist"
+        )
     response_user = await crud.create_user(user)
     return response_user
 
 
 @app.get("/users/{user_uid}", response_model=schemas.UserResponse)
-async def get_user_uid(user_uid: uuid.UUID):
+async def get_user_by_uid_view(user_uid: uuid.UUID):
     return await crud.get_user_by_uid(user_uid)
 
 
-# @app.post("/token", response_model=schemas.Token)
-# async def login_for_access_token(user: schemas.UserAuthenticate):
-#     user = auth.authenticate_user(user)
-#     if not user:
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Incorrect username or password",
-#             headers={"WWW-Authenticate": "Bearer"},
-#         )
-#     access_token_expires = datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-#     scopes = ["user"]
-#     if user.is_admin:
-#         scopes.append("admin")
-#     access_token = auth.create_access_token(
-#         data={"user": user.login, "scopes": scopes},
-#         expires_delta=access_token_expires
-#     )
-#     return {"access_token": access_token, "token_type": "bearer"}
+@app.patch("/users/{user_uid}", response_model=schemas.UserResponse)
+async def update_user(user_uid: uuid.UUID, data: schemas.UserResponse):
+    user = await crud.get_user_by_uid(user_uid)
+    await user.update(data)
+    return Response(status_code=status.HTTP_200_OK)
+
