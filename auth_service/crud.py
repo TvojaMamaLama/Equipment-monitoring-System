@@ -1,26 +1,24 @@
-from sqlalchemy.orm import Session
+import uuid
 
-import models
-import schemas
+from models import User
+from schemas import UserCreate
 import auth
 
 
-def get_user_by_uid(db: Session, user_uid: int):
-    return db.query(models.User).filter(models.User.id == user_uid).first()
+async def get_all_users():
+    return await User.objects.all()
 
 
-def get_all_users(db: Session):
-    return db.query(models.User).all()
+async def get_user_by_uid(user_uid: uuid.UUID):
+    return await User.objects.get(uid=user_uid)
 
 
-def get_user_by_login(db: Session, user_login):
-    return db.query(models.User).filter(models.User.login == user_login).first()
+async def get_user_by_login(user_login):
+    return await User.objects.get_or_none(login=user_login)
 
 
-def create_user(db: Session, user: schemas.UserCreate):
+async def create_user(user: UserCreate):
     hashed_password = auth.get_password_hash(user.password)
-    db_user = models.User(login=user.login, password=hashed_password)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    db_user = User(login=user.login, password=hashed_password)
+    await db_user.save()
     return db_user

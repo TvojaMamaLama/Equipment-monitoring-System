@@ -1,18 +1,26 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+import ormar
+import sqlalchemy
+import databases
 
-from db import Base
+from settings import DATABASE_URL
+
+metadata = sqlalchemy.MetaData()
+database = databases.Database(DATABASE_URL)
 
 
-class User(Base):
-    __tablename__ = "users"
-    uid = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    login = Column(String, unique=True)
-    password = Column(String)
+class MainMeta(ormar.ModelMeta):
+    metadata = metadata
+    database = database
 
-    def __init__(self, login, password):
-        self.login = login
-        self.password = password
+
+class User(ormar.Model):
+    uid: uuid.UUID = ormar.UUID(primary_key=True, default=uuid.uuid4)
+    login: str = ormar.String(unique=True, max_length=50)
+    password = ormar.String(max_length=500)
+    is_admin = ormar.Boolean(default=False)
+
+    class Meta(MainMeta):
+        tablename = "users"
+        order_by = ["-login"]

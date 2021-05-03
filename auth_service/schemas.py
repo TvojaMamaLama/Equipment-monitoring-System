@@ -1,4 +1,11 @@
+import uuid
+from typing import List
+
 from pydantic import BaseModel
+
+class BaseUser(BaseModel):
+    login: str
+    password: str
 
 
 class Token(BaseModel):
@@ -6,12 +13,24 @@ class Token(BaseModel):
     token_type: str
 
 
-class User(BaseModel):
+class TokenData(BaseModel):
     login: str
-    user_uid: str
+    scopes: List[str]
 
 
-class UserCreate(BaseModel):
+class UserResponse(BaseModel):
+    uid: uuid.UUID
     login: str
-    password: str
+    is_admin: bool
 
+    class Config:
+        arbitrary_types_allowed = True
+        orm_mode = True
+
+
+class UserCreate(BaseUser):
+    pass
+
+
+class UserAuthenticate(BaseUser):
+    pass
