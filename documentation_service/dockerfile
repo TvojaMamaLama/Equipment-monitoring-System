@@ -11,4 +11,6 @@ WORKDIR /srv
 
 ADD src /srv
 
-CMD alembic upgrade head && uvicorn main:app --port 8101
+EXPOSE 8101
+
+CMD alembic upgrade head && uvicorn main:app --host "0.0.0.0" --port 8101
