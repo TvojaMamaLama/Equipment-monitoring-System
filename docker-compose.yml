@@ -1,0 +1,61 @@
+version: "3"
+services: 
+    postgres_doc:
+        container_name: postgres_container_doc
+        image: postgres
+        environment:
+            POSTGRES_USER: test
+            POSTGRES_PASSWORD: test
+            POSTGRES_DB: test
+            PG_DATA: var/lib/postgresql/data/pgdata
+#        volumes:
+#            - ./pg_db_data/doc:var/lib/postgresql/data/pgdata
+        restart: always
+    
+    postgres_equ:
+        container_name: postgres_container_equ
+        image: postgres
+        environment:
+            POSTGRES_USER: test
+            POSTGRES_PASSWORD: test
+            POSTGRES_DB: test
+            PG_DATA: var/lib/postgresql/data/pgdata
+#        volumes:
+#            - ./pg_db_data/equ:var/lib/postgresql/data/pgdata
+        restart: always
+
+    postgres_ses:
+        container_name: postgres_container_ses
+        image: postgres
+        environment:
+            POSTGRES_USER: test
+            POSTGRES_PASSWORD: test
+            POSTGRES_DB: test
+            PG_DATA: var/lib/postgresql/data/pgdata
+#        volumes:
+#            - ./pg_db_data/ses:var/lib/postgresql/data/pgdata
+        restart: always
+
+    equipment_service:
+        build: ./equipment_service
+        ports:
+            - 8102:8102
+        links:
+            - postgres_equ
+        restart: always
+
+    documentation_service:
+        build: ./documentation_service
+        ports:
+            - 8101:8101
+        links: 
+            - postgres_doc
+        restart: always
+
+    session_service:
+        build: ./session_service
+        ports:
+            - 8103:8103
+        links: 
+            - postgres_ses
+        restart: always
