@@ -8,7 +8,6 @@ from fastapi import (
     HTTPException,
     Request,
     status,
-    Response
 )
 from fastapi.responses import FileResponse
 
@@ -53,7 +52,7 @@ async def create_document(document: Document):
 
 
 @app.get("/document/{uid}/file")
-async def get_streaming_video(request: Request, uid: uuid.UUID) -> FileResponse:
+async def get_doc_file(request: Request, uid: uuid.UUID) -> FileResponse:
     file, status_code, content_length, headers = await open_doc(request, uid)
     response = FileResponse(
         file,
