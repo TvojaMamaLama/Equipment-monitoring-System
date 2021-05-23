@@ -7,9 +7,9 @@ services:
             POSTGRES_USER: test
             POSTGRES_PASSWORD: test
             POSTGRES_DB: test
-            PG_DATA: var/lib/postgresql/data/pgdata
-#        volumes:
-#            - ./pg_db_data/doc:/var/lib/postgresql/data/pgdata
+            PG_DATA: /var/lib/postgresql/pgdata
+        volumes:
+            - ./pg_db_data/doc:/var/lib/postgresql/pgdata
         restart: always
     
     postgres_equ:
@@ -19,9 +19,9 @@ services:
             POSTGRES_USER: test
             POSTGRES_PASSWORD: test
             POSTGRES_DB: test
-            PG_DATA: var/lib/postgresql/data/pgdata
-#        volumes:
-#            - ./pg_db_data/equ:/var/lib/postgresql/data/pgdata
+            PG_DATA: /var/lib/postgresql/pgdata
+        volumes:
+            - ./pg_db_data/equ:/var/lib/postgresql/pgdata
         restart: always
 
     postgres_ses:
@@ -31,15 +31,17 @@ services:
             POSTGRES_USER: test
             POSTGRES_PASSWORD: test
             POSTGRES_DB: test
-            PG_DATA: var/lib/postgresql/data/pgdata
-#        volumes:
-#            - ./pg_db_data/ses:/var/lib/postgresql/data/pgdata
+            PG_DATA: /var/lib/postgresql/pgdata
+        volumes:
+            - ./pg_db_data/ses:/var/lib/postgresql/pgdata
         restart: always
 
     equipment_service:
         build: ./equipment_service
         ports:
             - 3002:3002
+        depends_on:
+            - postgres_equ
         links:
             - postgres_equ
         restart: always
@@ -48,6 +50,8 @@ services:
         build: ./documentation_service
         ports:
             - 3003:3003
+        depends_on:
+            - postgres_doc
         links: 
             - postgres_doc
         restart: always
@@ -56,6 +60,8 @@ services:
         build: ./session_service
         ports:
             - 3001:3001
+        depends_on:
+            - postgres_ses
         links: 
             - postgres_ses
         restart: always

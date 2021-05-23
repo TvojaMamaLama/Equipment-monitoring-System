@@ -37,11 +37,8 @@ async def create(equipment: Equipment):
 
 @app.put("/equipment/{uid}")
 async def update(uid: uuid.UUID = Path(...), equipment: Equipment = Body(...)):
-    equipment_db = await Equipment.objects.get_or_none(uid=uid)
-    if not equipment_db:
-        return Response(status_code=status.HTTP_404_NOT_FOUND)
-    equipment_db = await equipment_db.update(**equipment.dict(exclude={"uid"}))
-    return equipment_db
+    equipment = Equipment(uid=uid, **equipment.dict(exclude={"uid"}))
+    return await equipment.upsert()
 
 
 @app.patch("/equipment/{uid}")

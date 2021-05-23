@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -56,14 +57,14 @@ async def get_current_user(security_scopes: SecurityScopes, token: str = Depends
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        login: str = payload.get("user")
-        if login is None:
+        user: str = payload.get("user")
+        if user is None:
             raise credentials_exception
         token_scopes = payload.get("scopes", [])
-        token_data = schemas.TokenData(scopes=token_scopes, login=login)
+        token_data = schemas.TokenData(scopes=token_scopes, user=user)
     except (JWTError, ValidationError):
         raise credentials_exception
-    user = crud.get_user_by_login(token_data.login)
+    user = await crud.get_user_by_uid(uuid.UUID(token_data.user))
     if user is None:
         raise credentials_exception
     for scope in security_scopes.scopes:

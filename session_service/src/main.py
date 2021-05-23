@@ -1,10 +1,9 @@
 import uuid
 import datetime
-from typing import List, Optional
+from typing import List
 
-from fastapi import FastAPI, Depends, status, Response
+from fastapi import FastAPI, status, Response
 from fastapi.exceptions import HTTPException
-from pydantic import ValidationError
 
 import models
 from models import database
@@ -34,7 +33,7 @@ async def shutdown() -> None:
 
 @app.post("/auth", response_model=schemas.Token)
 async def user_authorization(user: schemas.UserAuthenticate):
-    user = await authenticate_user(user)
+    user: models.User = await authenticate_user(user)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -42,11 +41,11 @@ async def user_authorization(user: schemas.UserAuthenticate):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    scopes = ["user"]
+    scopes = []
     if user.is_admin:
         scopes.append("admin")
-    access_token = create_access_token(data={"user": user, "scopes": scopes}, expires_delta=access_token_expires)
-    return {"access_token": access_token, "token_type": "bearer"}
+    access_token = create_access_token(data={"user": str(user.uid), "scopes": scopes}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "Bearer"}
 
 
 @app.get("/users", response_model=List[schemas.UserResponse])
