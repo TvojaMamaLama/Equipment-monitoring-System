@@ -1,20 +1,22 @@
+import datetime
 import uuid
 from jose import jwt, JWTError
-from typing import List, Set
+from typing import List
 
 from fastapi import Request, Header, HTTPException, status
 
 from settings import ALGORITHM, SECRET_KEY
 
 
-def decode_token(token: str) -> (uuid.UUID, List[str]):
+def decode_token(token: str) -> (uuid.UUID, List[str], int):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user: uuid.UUID = uuid.UUID(payload.get("user"))
         scopes: List[str] = payload.get("scopes")
+        expire: int = payload.get("exp")
     except (KeyError, JWTError):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not valid token")
-    return user, scopes
+    return user, scopes, expire
 
 
 class HTTPHeaderAuthentication:
@@ -28,7 +30,9 @@ class HTTPHeaderAuthentication:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not valid header")
         except (IndexError, AttributeError):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not valid header")
-        user, scopes = decode_token(token=authorization[1])
+        user, scopes, expire = decode_token(token=authorization[1])
+        if expire < datetime.datetime.utcnow().timestamp():
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
         if not self.has_required_scope(scopes):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
         return user
