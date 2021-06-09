@@ -36,6 +36,18 @@ services:
             - ./pg_db_data/ses:/var/lib/postgresql/pgdata
         restart: always
 
+    postgres_gen:
+        container_name: postgres_container_gen
+        image: postgres
+        environment:
+            POSTGRES_USER: test
+            POSTGRES_PASSWORD: test
+            POSTGRES_DB: test
+            PG_DATA: /var/lib/postgresql/pgdata
+        volumes:
+            - ./pg_db_data/doc:/var/lib/postgresql/pgdata
+        restart: always
+
     equipment_service:
         build: ./equipment_service
         ports:
@@ -64,4 +76,14 @@ services:
             - postgres_ses
         links: 
             - postgres_ses
+        restart: always
+
+    generator_service:
+        build: ./generator_service
+        ports:
+            - 3004:3004
+        depends_on:
+            - postgres_gen
+        links:
+            - postgres_gen
         restart: always
